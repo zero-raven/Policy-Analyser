@@ -1,0 +1,25 @@
+{
+  "name": "Policy Analyser",
+  "description": "Classify privacy policy / ToS sections using a local FastAPI backend (OPP-115 model).",
+  "version": "1.0",
+  "manifest_version": 3,
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "48": "icons/icon48.png"
+    }
+  },
+  "icons": {
+    "128": "icons/icon128.png",
+    "48": "icons/icon48.png"
+  },
+  "permissions": [
+    "storage"
+  ],
+  "host_permissions": [
+    "http://localhost:8000/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  }
+}

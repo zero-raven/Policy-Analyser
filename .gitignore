@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+venv/
+
+# Node/Chrome extension
+node_modules/
+dist/
+
+# OS junk
+.DS_Store
+
+# Model data
+*.bin
+*.pt
+*.pth
+
+# Logs
+*.log
+
+# Temporary
+tmp/
+downloads/
