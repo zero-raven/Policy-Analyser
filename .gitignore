@@ -1,26 +1,30 @@
+cat > .gitignore <<'EOF'
 # Python
 __pycache__/
 *.pyc
-*.pyo
-*.pyd
-.venv/
 venv/
+.venv/
+env/
+*.egg-info/
 
-# Node/Chrome extension
-node_modules/
-dist/
-
-# OS junk
-.DS_Store
-
-# Model data
-*.bin
+# data / models
+models/
 *.pt
 *.pth
+*.bin
 
-# Logs
+# OS
+.DS_Store
+
+# logs
 *.log
 
-# Temporary
-tmp/
-downloads/
+# pip cache (optional)
+~/.cache/pip
+
+# node
+node_modules/
+
+# chrome extension build
+extension/*.zip
+EOF
