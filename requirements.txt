@@ -3,3 +3,9 @@ uvicorn
 transformers
 torch
 streamlit
+langchain
+langchain-groq
+dotenv
+langchain-text-splitters
+bs4
+

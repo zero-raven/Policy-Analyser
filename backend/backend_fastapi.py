@@ -8,6 +8,7 @@ from fastapi import HTTPException
 
 
 from app.langchain_modules.summarizer import summarize
+from app.langchain_modules.explainer import explain
 from app.langgraph.graph import policy_graph
 from app.core.hf_classifier import AVAILABLE_MODELS, DEFAULT_MODEL, classify_chunks
 from app.core.chunk_processor import chunk_text
@@ -147,3 +148,47 @@ async def analyze_text(req: dict):
         "summary": summary,
         "model_used": model
     }
+
+@app.post("/summarize")
+async def summarize_endpoint(req: dict):
+    chunks = req.get("chunks")
+    if not chunks:
+        # Fallback to text if chunks aren't provided
+        text = req.get("text")
+        if not text:
+            raise HTTPException(status_code=400, detail="No content provided")
+        chunks = chunk_text(text)
+    
+    try:
+        summary = summarize({"chunks": chunks})
+        return {"summary": summary}
+    except Exception as e:
+        print("Summary error:", e)
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/explain")
+async def explain_endpoint(req: dict):
+    # This expects a state-like dict with 'labels' and 'relevant_chunks'
+    labels = req.get("labels", [])
+    chunks = req.get("chunks", [])
+    
+    # If we have chunks but no relevant_chunks mapping, we might need to find them
+    # But for now, let's assume the frontend passes what it has or we use the chunks
+    
+    # Simple heuristic to find 'relevant' chunks if not provided
+    # (Usually the classifier provides this, but if coming from /predict, we might need it)
+    relevant_chunks = req.get("relevant_chunks", {})
+    if not relevant_chunks and chunks and labels:
+        # Pass chunks as a list, the explainer expects relevant_chunks mapping
+        # Let's just create a dummy mapping if missing for now or use the first few chunks
+        relevant_chunks = {label: "\n".join(chunks[:3]) for label in labels}
+
+    try:
+        explanation = explain({
+            "labels": labels,
+             "relevant_chunks": relevant_chunks
+        })
+        return {"explanation": explanation}
+    except Exception as e:
+        print("Explanation error:", e)
+        raise HTTPException(status_code=500, detail=str(e))
