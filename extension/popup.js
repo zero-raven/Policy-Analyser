@@ -83,6 +83,37 @@ function clearResults() {
   policyChunks = [];
 }
 
+function formatChat(text) {
+  if (!text) return "";
+
+  // 1. Escape HTML first (security)
+  let html = escapeHtml(text);
+
+  // 2. Markdown bold → <strong>
+  html = html.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
+
+  // 3. Convert bullet lines (• item) → <li>
+  html = html.replace(/(?:^|\n)•\s+(.*)/g, "<li>$1</li>");
+
+  // 4. Wrap consecutive <li> blocks in <ul>
+  html = html.replace(
+    /(<li>.*?<\/li>)/gs,
+    match => `<ul>${match}</ul>`
+  );
+
+  // 5. Split into paragraphs (2+ newlines)
+  html = html
+    .split(/\n{2,}/)
+    .map(p => `<p>${p.replace(/\n/g, "<br>")}</p>`)
+    .join("");
+
+  return html;
+}
+
+
+
+
+
 /***********************
  * RENDERING
  ***********************/
@@ -130,8 +161,8 @@ function renderResults(data) {
  * BACKEND CALLS
  ***********************/
 async function classifyText(text) {
-  setStatus("Analyzing…");
-  setModelState(modelSelect.value);
+  setStatus('');
+  setModelState('loading');
 
   try {
     const resp = await fetch(DEFAULT_BACKEND, {
@@ -147,12 +178,18 @@ async function classifyText(text) {
 
     const data = await resp.json();
     renderResults(data);
-    setStatus("Analysis complete");
+
+    // Clean success state
+    setModelState('ready');
+    setStatus('');
+
   } catch (err) {
     console.error(err);
-    setStatus("Analysis failed", true);
+    setModelState('error');
+    setStatus('Failed to analyze text.', true);
   }
 }
+
 
 /***********************
  * EVENTS
@@ -215,7 +252,8 @@ textEl.addEventListener("input", () => {
  * SCAN PAGE (FIXED)
  ***********************/
 analyzePageBtn.addEventListener("click", async () => {
-  setStatus("Scanning page…");
+  setStatus("");            // clear old errors
+  setModelState("loading");
 
   try {
     const [tab] = await chrome.tabs.query({
@@ -233,8 +271,9 @@ analyzePageBtn.addEventListener("click", async () => {
       func: () => window.__policyExtract?.()
     });
 
-    if (!result || !result.text || result.text.length < 50) {
-      setStatus("No policy-like content found", true);
+    if (!result?.text || result.text.length < 50) {
+      setStatus("No policy-like content found.", true);
+      setModelState("ready");
       return;
     }
 
@@ -243,12 +282,18 @@ analyzePageBtn.addEventListener("click", async () => {
       `${result.text.length} chars`;
 
     setStatus(`Scanned from ${result.source}`);
-    classifyText(result.text); // 🔥 auto-analyze (this was missing)
+    setModelState("ready");
+
+    // 🔥 IMPORTANT: await this so errors don't leak
+    await classifyText(result.text);
+
   } catch (err) {
     console.error(err);
-    setStatus("Page scan failed", true);
+    setModelState("error");
+    setStatus("", true);
   }
 });
+
 
 /***********************
  * SUMMARY (ON DEMAND)
@@ -257,11 +302,13 @@ toggleDeepBtn.addEventListener("click", async () => {
   deepSection.classList.toggle("hidden");
 
   if (summaryLoaded || deepSection.classList.contains("hidden")) {
-    if (summaryLoaded) summaryText.textContent = currentSummary;
+    if (summaryLoaded) {
+      summaryText.innerHTML = formatChat(currentSummary);
+    }
     return;
   }
 
-  summaryText.textContent = "Generating summary…";
+  summaryText.innerHTML = "<p>Generating summary…</p>";
 
   try {
     const resp = await fetch("http://localhost:8000/summarize", {
@@ -275,30 +322,34 @@ toggleDeepBtn.addEventListener("click", async () => {
 
     const data = await resp.json();
     currentSummary = data.summary || "No summary available.";
-    summaryText.textContent = currentSummary;
+    summaryText.innerHTML = formatChat(currentSummary);
     summaryLoaded = true;
   } catch {
-    summaryText.textContent = "Failed to generate summary.";
+    summaryText.innerHTML = "<p>⚠️ Failed to generate summary.</p>";
   }
 });
 
+//explanation section
 toggleExplainBtn.addEventListener("click", async () => {
   explanationSection.classList.toggle("hidden");
 
   if (explanationLoaded || explanationSection.classList.contains("hidden")) {
-    if (explanationLoaded) explanationText.textContent = currentExplanation;
+    if (explanationLoaded) {
+      explanationText.innerHTML = formatChat(currentExplanation);
+    }
     return;
   }
 
-  explanationText.textContent = "Generating explanation…";
+  explanationText.innerHTML = "<p>Generating explanation…</p>";
 
   try {
     const labels = Array.from(labelsUl.children).map(li => li.textContent);
+
     const resp = await fetch("http://localhost:8000/explain", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        labels: labels,
+        labels,
         chunks: policyChunks,
         relevant_chunks: currentRelevantChunks
       })
@@ -306,12 +357,13 @@ toggleExplainBtn.addEventListener("click", async () => {
 
     const data = await resp.json();
     currentExplanation = data.explanation || "No explanation available.";
-    explanationText.textContent = currentExplanation;
+    explanationText.innerHTML = formatChat(currentExplanation);
     explanationLoaded = true;
   } catch {
-    explanationText.textContent = "Failed to generate explanation.";
+    explanationText.innerHTML = "<p>⚠️ Failed to generate explanation.</p>";
   }
 });
+
 
 /***********************
  * CHAT (ON DEMAND)
@@ -326,8 +378,11 @@ sendChatBtn.addEventListener("click", async () => {
 
   chatInput.value = "";
 
+  // User bubble
   chatMessages.innerHTML += `
-    <div class="item user">${escapeHtml(msg)}</div>
+    <div class="item user">
+      <p>${escapeHtml(msg)}</p>
+    </div>
   `;
 
   try {
@@ -342,17 +397,25 @@ sendChatBtn.addEventListener("click", async () => {
 
     const data = await resp.json();
 
+    // Bot bubble (formatted)
     chatMessages.innerHTML += `
-      <div class="item bot">${escapeHtml(data.answer || "No response")}</div>
+      <div class="item bot">
+        ${formatChat(data.answer || "No response")}
+      </div>
     `;
   } catch {
     chatMessages.innerHTML += `
-      <div class="item bot">Chat failed.</div>
+      <div class="item bot">
+        <p>⚠️ Chat failed.</p>
+      </div>
     `;
   }
 
-  chatMessages.scrollTop = chatMessages.scrollHeight;
+  requestAnimationFrame(() => {
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+  });
 });
+
 
 /***********************
  * COPY LABELS
