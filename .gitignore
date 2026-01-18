@@ -6,6 +6,7 @@ venv/
 .venv/
 env/
 *.egg-info/
+.env
 
 # data / models
 models/
