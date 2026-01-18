@@ -6,69 +6,131 @@
   <title>Policy Analyser</title>
   <link rel="stylesheet" href="styles.css">
 </head>
+
 <body>
   <div class="app">
+
+    <!-- HEADER -->
     <header class="header">
       <div class="brand">
-        <img src="icons/hero.png" alt="Policy Analyser" class="hero" onerror="this.style.display='none'">
-        <div>
+        <div class="logo"></div>
+        <div class="brand-text">
           <div class="title">Policy Analyser</div>
-          <div class="subtitle">Extract & explain privacy policy sections</div>
+          <div class="subtitle">AI Privacy Intelligence</div>
         </div>
       </div>
-      <div class="status" id="modelStatus" title="Model status">Model: <span id="modelState">unknown</span></div>
+
+      <div class="status-pill">
+        <span class="dot ready" id="statusDot"></span>
+        <span id="modelState">Ready</span>
+      </div>
     </header>
 
+    <!-- MAIN -->
     <main class="main">
-      <label for="text" class="sr">Policy text</label>
-      <textarea id="text" placeholder="Paste a section of a privacy policy or Terms of Service..."></textarea>
 
-      <div class="meta">
-        <div class="left">
-          <div id="charCount">0 chars</div>
-          <div class="hint">Tip: press <kbd>Ctrl+Enter</kbd> to classify</div>
+      <!-- INPUT STACK -->
+      <section class="input-stack">
+
+        <!-- URL INPUT -->
+        <div class="input-group">
+          <label class="input-label">Privacy Policy URL (optional)</label>
+          <input
+            id="urlInput"
+            type="url"
+            placeholder="https://example.com/privacy"
+            class="url-input"
+          />
         </div>
-        <div class="right">
-          <button id="analyzePage" class="btn">Analyze Page</button>
-          <button id="classify" class="btn primary">Classify</button>
-          <button id="clear" class="btn danger">Clear</button>
+
+        <!-- TEXT INPUT -->
+        <div class="input-group">
+          <label class="input-label">Policy Text</label>
+          <textarea
+            id="text"
+            placeholder="Paste policy text here, or scan the current page"
+          ></textarea>
         </div>
-      </div>
 
-      <div id="status" class="statusBox" aria-live="polite"></div>
+      </section>
 
-      <section id="results" class="results hidden" aria-hidden="true">
-        <div class="results-top">
-          <h3>Detected Labels</h3>
-          <div class="actions">
-            <button id="copyLabels" class="btn">Copy</button>
-            <button id="exportJson" class="btn">Export JSON</button>
+      <!-- CONTROLS -->
+      <section class="controls-bar">
+
+        <div class="controls-left">
+          <!-- <span id="charCount" class="char-count">0 chars</span> -->
+
+          <select id="modelSelect" class="model-select">
+            <option value="bert">BERT · Fast</option>
+            <option value="deberta">DeBERTa · Balanced</option>
+            <option value="deberta-v2">DeBERTa v2 · Accurate</option>
+          </select>
+        </div>
+
+        <div class="controls-right">
+          <button id="analyzePage" class="btn ghost">Scan Page</button>
+          <button id="clear" class="btn ghost danger">Clear</button>
+          <button id="classify" class="btn primary">Analyze</button>
+        </div>
+
+      </section>
+
+      <!-- STATUS -->
+      <div id="status" class="status-text"></div>
+
+      <!-- RESULTS -->
+      <section id="results" class="results hidden">
+
+        <!-- RESULTS HEADER -->
+        <div class="results-header">
+          <h3>Detected Clauses</h3>
+
+          <div class="results-actions">
+            <button id="toggleDeep" class="btn ghost">Summary</button>
+            <button id="toggleChat" class="btn ghost">Chat</button>
+            <button id="copyLabels" class="btn ghost">Copy</button>
           </div>
         </div>
+
+        <!-- LABELS -->
         <ul id="labels" class="labels"></ul>
 
-        <h4>Evidence & Probabilities</h4>
-        <div id="evidenceList" class="evidence"></div>
+        <!-- SUMMARY -->
+        <section id="deepAnalysis" class="panel hidden">
+          <h4>Executive Summary</h4>
+          <p id="summaryText"></p>
+        </section>
+
+        <!-- EVIDENCE -->
+        <section class="panel">
+          <h4>Evidence</h4>
+          <div id="evidenceList" class="evidence"></div>
+        </section>
+
+        <!-- CHAT -->
+        <section id="chatSection" class="panel hidden">
+          <h4>Ask the Policy</h4>
+
+          <div id="chatMessages" class="chat"></div>
+
+          <div class="chat-input-row">
+            <input
+              id="chatInput"
+              placeholder="What data is collected?"
+            />
+            <button id="sendChat" class="btn primary">Ask</button>
+          </div>
+        </section>
+
       </section>
     </main>
 
-    <footer class="footer">
-      <div>Backend: <a id="backendLink" href="#" target="_blank">http://localhost:8000/predict</a></div>
-      <small>Model: OPP-115 • Local inference</small>
-    </footer>
-  </div>
+    <!-- FOOTER -->
+    <!-- <footer class="footer">
+      <a id="backendLink" href="#" target="_blank">Local API</a>
+      <span>OPP-115</span>
+    </footer> -->
 
-  <!-- Simple settings modal -->
-  <div id="settingsModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
-    <div class="modalContent">
-      <h3 id="settingsTitle">Settings</h3>
-      <label>Backend URL</label>
-      <input id="backendUrl" type="text" />
-      <div class="modalRow">
-        <button id="saveSettings" class="btn primary">Save</button>
-        <button id="cancelSettings" class="btn">Cancel</button>
-      </div>
-    </div>
   </div>
 
   <script src="popup.js"></script>
