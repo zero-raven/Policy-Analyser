@@ -1,5 +1,6 @@
 <!doctype html>
 <html lang="en">
+
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
@@ -35,21 +36,13 @@
         <!-- URL INPUT -->
         <div class="input-group">
           <label class="input-label">Privacy Policy URL (optional)</label>
-          <input
-            id="urlInput"
-            type="url"
-            placeholder="https://example.com/privacy"
-            class="url-input"
-          />
+          <input id="urlInput" type="url" placeholder="https://example.com/privacy" class="url-input" />
         </div>
 
         <!-- TEXT INPUT -->
         <div class="input-group">
           <label class="input-label">Policy Text</label>
-          <textarea
-            id="text"
-            placeholder="Paste policy text here, or scan the current page"
-          ></textarea>
+          <textarea id="text" placeholder="Paste policy text here, or scan the current page"></textarea>
         </div>
 
       </section>
@@ -84,21 +77,29 @@
         <!-- RESULTS HEADER -->
         <div class="results-header">
           <h3>Detected Clauses</h3>
-
-          <div class="results-actions">
-            <button id="toggleDeep" class="btn ghost">Summary</button>
-            <button id="toggleChat" class="btn ghost">Chat</button>
-            <button id="copyLabels" class="btn ghost">Copy</button>
-          </div>
         </div>
 
-        <!-- LABELS -->
+        <!-- LABELS (Moved above buttons) -->
         <ul id="labels" class="labels"></ul>
+
+        <!-- ACTIONS (Moved below labels) -->
+        <div class="results-actions">
+          <button id="toggleDeep" class="btn ghost">📝 Summary</button>
+          <button id="toggleExplain" class="btn ghost">💡 Explanation</button>
+          <button id="toggleChat" class="btn ghost">💬 Chat</button>
+          <button id="copyLabels" class="btn ghost">📋 Copy</button>
+        </div>
 
         <!-- SUMMARY -->
         <section id="deepAnalysis" class="panel hidden">
           <h4>Executive Summary</h4>
           <p id="summaryText"></p>
+        </section>
+
+        <!-- EXPLANATION -->
+        <section id="explanationAnalysis" class="panel hidden">
+          <h4>Risk Explanation</h4>
+          <p id="explanationText"></p>
         </section>
 
         <!-- EVIDENCE -->
@@ -114,10 +115,7 @@
           <div id="chatMessages" class="chat"></div>
 
           <div class="chat-input-row">
-            <input
-              id="chatInput"
-              placeholder="What data is collected?"
-            />
+            <input id="chatInput" placeholder="What data is collected?" />
             <button id="sendChat" class="btn primary">Ask</button>
           </div>
         </section>
@@ -135,4 +133,5 @@
 
   <script src="popup.js"></script>
 </body>
+
 </html>

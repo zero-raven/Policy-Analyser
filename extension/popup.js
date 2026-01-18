@@ -24,9 +24,12 @@ const labelsUl = document.getElementById("labels");
 const evidenceDiv = document.getElementById("evidenceList");
 
 const toggleDeepBtn = document.getElementById("toggleDeep");
+const toggleExplainBtn = document.getElementById("toggleExplain");
 const toggleChatBtn = document.getElementById("toggleChat");
 const deepSection = document.getElementById("deepAnalysis");
 const summaryText = document.getElementById("summaryText");
+const explanationSection = document.getElementById("explanationAnalysis");
+const explanationText = document.getElementById("explanationText");
 
 const chatSection = document.getElementById("chatSection");
 const chatMessages = document.getElementById("chatMessages");
@@ -39,7 +42,11 @@ const copyBtn = document.getElementById("copyLabels");
  * STATE
  ***********************/
 let policyChunks = [];
+let currentSummary = "";
+let currentExplanation = "";
+let currentRelevantChunks = {};
 let summaryLoaded = false;
+let explanationLoaded = false;
 
 /***********************
  * HELPERS
@@ -65,9 +72,14 @@ function clearResults() {
   evidenceDiv.innerHTML = "";
   resultsSection.classList.add("hidden");
   deepSection.classList.add("hidden");
+  explanationSection.classList.add("hidden");
   chatSection.classList.add("hidden");
   chatMessages.innerHTML = "";
   summaryLoaded = false;
+  explanationLoaded = false;
+  currentSummary = "";
+  currentExplanation = "";
+  currentRelevantChunks = {};
   policyChunks = [];
 }
 
@@ -101,10 +113,17 @@ function renderResults(data) {
   }
 
   policyChunks = data.chunks || [];
+  currentSummary = data.summary || "";
+  currentExplanation = data.explanation || "";
+  currentRelevantChunks = data.relevant_chunks || {};
+
   resultsSection.classList.remove("hidden");
   deepSection.classList.add("hidden");
+  explanationSection.classList.add("hidden");
   chatSection.classList.add("hidden");
-  summaryLoaded = false;
+
+  summaryLoaded = !!currentSummary;
+  explanationLoaded = !!currentExplanation;
 }
 
 /***********************
@@ -237,26 +256,60 @@ analyzePageBtn.addEventListener("click", async () => {
 toggleDeepBtn.addEventListener("click", async () => {
   deepSection.classList.toggle("hidden");
 
-  if (summaryLoaded || deepSection.classList.contains("hidden")) return;
+  if (summaryLoaded || deepSection.classList.contains("hidden")) {
+    if (summaryLoaded) summaryText.textContent = currentSummary;
+    return;
+  }
 
   summaryText.textContent = "Generating summary…";
 
   try {
-    const resp = await fetch(ANALYZE_TEXT_ENDPOINT, {
+    const resp = await fetch("http://localhost:8000/summarize", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        text: textEl.value,
-        model: modelSelect.value
+        chunks: policyChunks,
+        text: textEl.value
       })
     });
 
     const data = await resp.json();
-    summaryText.textContent =
-      data.summary || "No summary available.";
+    currentSummary = data.summary || "No summary available.";
+    summaryText.textContent = currentSummary;
     summaryLoaded = true;
   } catch {
     summaryText.textContent = "Failed to generate summary.";
+  }
+});
+
+toggleExplainBtn.addEventListener("click", async () => {
+  explanationSection.classList.toggle("hidden");
+
+  if (explanationLoaded || explanationSection.classList.contains("hidden")) {
+    if (explanationLoaded) explanationText.textContent = currentExplanation;
+    return;
+  }
+
+  explanationText.textContent = "Generating explanation…";
+
+  try {
+    const labels = Array.from(labelsUl.children).map(li => li.textContent);
+    const resp = await fetch("http://localhost:8000/explain", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        labels: labels,
+        chunks: policyChunks,
+        relevant_chunks: currentRelevantChunks
+      })
+    });
+
+    const data = await resp.json();
+    currentExplanation = data.explanation || "No explanation available.";
+    explanationText.textContent = currentExplanation;
+    explanationLoaded = true;
+  } catch {
+    explanationText.textContent = "Failed to generate explanation.";
   }
 });
 
